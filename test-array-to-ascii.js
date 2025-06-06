@@ -1,66 +1,104 @@
 // Функция преобразования массива чисел в ASCII строки
+function rleEncode(str) {
+  let result = '';
+  let count = 1;
+
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === str[i + 1]) {
+      count++;
+    } else {
+      result += count + str[i];
+      count = 1;
+    }
+  }
+
+  return result;
+}
+
+// Функция RLE декодирования
+function rleDecode(str) {
+  let result = '';
+
+  for (let i = 0; i < str.length; i++) {
+    if (!isNaN(str[i])) {
+      const count = Number(str[i]);
+      const char = str[i + 1];
+      result += char.repeat(count);
+      i++; // Пропускаем следующий символ (сам символ)
+    } else {
+      result += str[i];
+    }
+  }
+
+  return result;
+}
+
 function encodeNumbers(numbers) {
   const result = [];
-  
+
   for (let num of numbers) {
-      if (num <= 256) {
-          // Преобразуем число в ASCII символ
-          result.push(String.fromCharCode(num + 32));
-      } else {
-          // Для чисел больше 256 добавляем нулевой символ и разницу
-          const diff = num - 256;
-          result.push('\x00' + String.fromCharCode(diff + 32));
-      }
+    if (num <= 256) {
+      // Преобразуем число в ASCII символ
+      result.push(String.fromCharCode(num + 32));
+    } else {
+      // Для чисел больше 256 добавляем нулевой символ и разницу
+      const diff = num - 256;
+      result.push('\x00' + String.fromCharCode(diff + 32));
+    }
   }
-  
-  return result.join('');
+
+  return rleEncode(result.join(''));
 }
 
 // Функция декодирования ASCII строки обратно в числа
 function decodeString(encodedStr) {
   const result = [];
   let i = 0;
-  
-  while (i < encodedStr.length) {
-      const currentChar = encodedStr.charCodeAt(i);
-      
-      if (currentChar === 0) {
-          // Если встретили нулевой символ - читаем следующий байт как разницу
-          const diff = encodedStr.charCodeAt(i + 1);
-          result.push(diff + 256 - 32);
-          i += 2;
-      } else {
-          // Обычное число <= 256
-          result.push(currentChar - 32);
-          i++;
-      }
+  const stringNoRLE = rleDecode(encodedStr);
+  while (i < stringNoRLE.length) {
+
+    const currentChar = stringNoRLE.charCodeAt(i);
+
+    if (currentChar === 0) {
+      // Если встретили нулевой символ - читаем следующий байт как разницу
+      const diff = stringNoRLE.charCodeAt(i + 1);
+      result.push(diff + 256 - 32);
+      i += 2;
+    } else {
+      // Обычное число <= 256
+      result.push(currentChar - 32);
+      i++;
+    }
   }
-  
+
   return result;
 }
+
+
+
 function generateTest900() {
 
-    const numbers = [];
-    // Генерируем по три числа для каждого значения от 0 до 299
-    for (let i = 0; i < 300; i++) {
-        for (let j = 0; j < 3; j++) {
-            numbers.push(i);
-        }
+  const numbers = [];
+  // Генерируем по три числа для каждого значения от 0 до 299
+  for (let i = 0; i < 300; i++) {
+    for (let j = 0; j < 3; j++) {
+      numbers.push(i);
     }
-    return  numbers ;
+  }
+  return numbers;
 
 }
 function generateTestCases() {
   const testCases = {
-      simple: [100, 105, 110, 115, 120],
-      random50: Array.from({length: 50}, () => Math.floor(Math.random() * 300)),
-      random100: Array.from({length: 100}, () => Math.floor(Math.random() * 300)),
-      random500: Array.from({length: 500}, () => Math.floor(Math.random() * 300)),
-      random1000: Array.from({length: 1000}, () => Math.floor(Math.random() * 300)),
-      singleDigit: Array.from({length: 300}, () => Math.floor(Math.random() * 10)),
-      twoDigits: Array.from({length: 300}, () => Math.floor(Math.random() * 90) + 10),
-      threeDigits: Array.from({length: 300}, () => Math.floor(Math.random() * 200) + 100),
-      eachThree: generateTest900(),
+    simple: [100, 105, 110, 115, 120],
+    random50: Array.from({ length: 50 }, () => Math.floor(Math.random() * 300)),
+    random100: Array.from({ length: 100 }, () => Math.floor(Math.random() * 300)),
+    random500: Array.from({ length: 500 }, () => Math.floor(Math.random() * 300)),
+    random1000: Array.from({ length: 1000 }, () => Math.floor(Math.random() * 300)),
+    singleDigit: Array.from({ length: 300 }, () => Math.floor(Math.random() * 10)),
+    twoDigits: Array.from({ length: 300 }, () => Math.floor(Math.random() * 90) + 10),
+    threeDigits: Array.from({ length: 300 }, () => Math.floor(Math.random() * 200) + 100),
+    eachThree: generateTest900(),
   };
 
   return testCases;
@@ -75,23 +113,24 @@ function calculateCompressionRatio(originalSize, compressedSize) {
 // Функция для тестирования с различными наборами данных
 function runTests() {
   const testCases = generateTestCases();
-  
+
   console.log('Начало тестирования...\n');
-  
+
   for (const [name, numbers] of Object.entries(testCases)) {
-      console.log(`Тест: ${name}`);
-      console.log(`Исходный массив: [${numbers.slice(0, 10).join(', ')}${numbers.length > 5 ? '...' : ''}]`);
-      console.log(`Длина массива: ${numbers.length}`);
-      
-      const asciiString = encodeNumbers(numbers);
-      console.log(`Сжатая строка: ${asciiString}`);
-      
-      const decodedNumbers = decodeString(asciiString);
-       console.log(`Коэффициент сжатия: ${calculateCompressionRatio(numbers.length * 4, asciiString.length).toFixed(2)}:1`);      
-      // Проверяем корректность декодирования
-      const isCorrect = JSON.stringify(numbers) === JSON.stringify(decodedNumbers);
-      console.log(`Корректность декодирования: ${isCorrect ? '✓' : '✗'}`);
-      console.log('---\n');
+    console.log(`Тест: ${name}`);
+    console.log(`Исходный массив: [${numbers.slice(0, 10).join(', ')}${numbers.length > 5 ? '...' : ''}]`);
+    console.log(`Длина массива: ${numbers.length}`);
+
+    const asciiString = encodeNumbers(numbers);
+    console.log(`Сжатая строка: ${asciiString}`);
+
+    const decodedNumbers = decodeString(asciiString);
+    console.log(`Коэффициент сжатия: ${calculateCompressionRatio(numbers.length * 4, asciiString.length).toFixed(2)}:1`);
+    // Проверяем корректность декодирования
+    console.log('Декодированный массив: [', decodedNumbers.slice(0, 10).join(', '), `${decodedNumbers.length > 5 ? '...' : ''}]`);
+    const isCorrect = JSON.stringify(numbers) === JSON.stringify(decodedNumbers);
+    console.log(`Корректность декодирования: ${isCorrect ? '✓' : '✗'}`);
+    console.log('---\n');
   }
 }
 
